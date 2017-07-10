@@ -1,0 +1,33 @@
+---
+- name: check dashboard application
+  command: ls -l {{ document_root }}/{{ application_name }}
+  ignore_errors: true
+  register: chkDashboardApplication
+
+# create release dir
+- name: Create release directory
+  file: path={{ release_path }} state=directory owner={{ nginx_user }} group={{ nginx_group }} mode=0777 recurse=yes
+
+# 各ディレクトリ権限変更(local以外)
+- name: Change permission dashboard project dir
+  file: path={{ document_root }}/{{application_name}} state=directory owner={{ nginx_user }} group={{ nginx_group }} mode=0755 recurse=yes
+  when: [chkDashboardApplication|success, stage != 'local']
+
+- name: Change Mode bootstrap/cache/
+  file: path={{ document_root }}/{{application_name}}/bootstrap/cache state=directory owner={{ nginx_user }} group={{ nginx_group }} mode=0777
+  when: [chkDashboardApplication|success, stage != 'local']
+
+- name: Change Mode storage
+  file: path={{ document_root }}/{{application_name}}/storage state=directory recurse=yes owner={{ nginx_user }} group={{ nginx_group }} mode=0777
+  when: [chkDashboardApplication|success, stage != 'local']
+
+# dashboard用nginx.conf設定
+- name: put nginx dashboard.conf
+  template: src=roles/dashboard/templates/nginx_dashboard.conf.j2 dest=/etc/nginx/conf.d/dashboard.conf
+
+- name: restart nginx
+  command: service nginx restart
+
+# dashboard用aws cli設定
+- name: create awscli config
+  template: src=roles/dashboard/templates/aws_config.j2 dest={{ nginx_home }}/.aws/config owner={{ nginx_user }} group={{ nginx_group }} mode=0644

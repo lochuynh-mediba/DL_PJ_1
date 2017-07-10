@@ -1,0 +1,22 @@
+- include: dl_batch.yml
+
+# ローカル環境にのみ適用するもの
+- name: provision local batch only
+  hosts: dl_batch
+  sudo: yes
+  vars_files:
+    - ../hosts/{{ stage }}/group_vars/dl_batch.yml
+  roles:
+    # awscliのインストール
+    - role: aws
+    # timezone設定
+    - role: timezone
+    # ローカルにmysqlを立てる
+    - role: mysql57-server
+  tasks:
+    # ntpdサービスを起動して自動起動をONにする
+    - name: enabled ntpd
+      service: name=ntpd state=restarted enabled=yes
+    # /vagrant/dl.mediba.jpへのシンボリックリンク
+    - name: local project symbolic link
+      file: src=/vagrant/{{ application_name }} dest={{ document_root }} state=link

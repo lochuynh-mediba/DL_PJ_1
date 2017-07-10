@@ -1,0 +1,38 @@
+---
+# MySQLServerのインストール（ローカルのみ）
+- name: install mysql5.7 Server
+  yum: name=mysql-community-server state=present enablerepo=mysql57-community*
+  when: stage == 'local'
+
+# MySQLServerの起動（ローカルのみ）
+- name: start mysql server
+  service: name=mysqld state=started enabled=yes
+  when: stage == 'local'
+
+# MySQLのデフォルトパスワード設定（ローカルのみ）
+- name: save tmp password
+  script: save-mysql-tmp-password.sh creates=/root/.tmp.my.cnf
+  when: stage == 'local'
+
+- name: change default password policy
+  script: change_mysql_password_policy.sh creates=/root/.my.cnf
+  when: stage == 'local'
+
+- name: set new password
+  script: change-root-password.sh creates=/root/.my.cnf
+  when: stage == 'local'
+
+# ansibleのmysql_dbとmysql_userを使うために必要（AmazonLinuxでは多分動かない）
+- name: install mysql python module
+  yum: name=MySQL-python state=present
+  when: stage == 'local'
+
+# ローカル用のDB作成（とりあえず失敗しても通過するようにする）
+- name: create local database
+  mysql_db: name=dlpj state=present
+  when: stage == 'local'
+
+# ローカル用のDBユーザー作成（とりあえず失敗しても通過するようにする）
+- name: create local database user
+  mysql_user: name=dlpj password=dlpj priv=*.*:ALL,GRANT state=present
+  when: stage == 'local'

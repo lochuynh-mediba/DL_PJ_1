@@ -1,0 +1,10 @@
+- name: provision to batch
+  hosts: dl_batch
+  sudo: yes
+  vars_files:
+    - ../hosts/{{ stage }}/group_vars/dl_batch.yml
+  roles:
+    - role: base
+    - role: batch
+    - role: mysql57
+    - role: python3
